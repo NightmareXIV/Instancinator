@@ -9,8 +9,17 @@ using System.Threading.Tasks;
 
 namespace Instancinator
 {
-    internal class Static
+    internal static class Static
     {
+        internal class Strings
+        {
+            public const string Instance1Regex = "//";
+            public const string Instance2Regex = "//";
+            public const string Instance3Regex = "//";
+            public const string TravelToInstancedArea = "Travel to Instanced Area.";
+            public const string AetheryteTarget = "aetheryte";
+        }
+
         public static string Safe(Action a)
         {
             try
@@ -32,6 +41,11 @@ namespace Instancinator
             {
                 Svc.Chat.Print(s);
             }
+        }
+
+        public static string Join(this IEnumerable<string> s, string separator = "\n")
+        {
+            return string.Join(separator, s);
         }
     }
 }
