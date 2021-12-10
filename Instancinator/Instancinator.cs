@@ -11,6 +11,7 @@ using System.Numerics;
 using ImGuiNET;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface;
+using Dalamud.Game.Text.SeStringHandling;
 
 namespace Instancinator
 {
@@ -28,6 +29,7 @@ namespace Instancinator
             Svc.PluginInterface.UiBuilder.Draw += Draw;
             Svc.ClientState.TerritoryChanged += TerrCh;
             Svc.Commands.AddHandler("/inst", new CommandInfo(Cmd));
+            Svc.Toasts.ErrorToast += ToastHandler;
         }
 
         public void Dispose()
@@ -37,6 +39,15 @@ namespace Instancinator
             Svc.PluginInterface.UiBuilder.Draw -= Draw;
             Svc.Commands.RemoveHandler("/inst");
             Svc.ClientState.TerritoryChanged -= TerrCh;
+            Svc.Toasts.ErrorToast -= ToastHandler;
+        }
+
+        private void ToastHandler(ref SeString message, ref bool isHandled)
+        {
+            if(message.ToString().StartsWith("Your destination is currently congested"))
+            {
+                nextKeypress = 0;
+            }
         }
 
         private void TerrCh(object sender, ushort e)
@@ -47,7 +58,7 @@ namespace Instancinator
         private void Tick(Framework framework)
         {
             draw = false;
-            if(Svc.ClientState.LocalPlayer != null && !Svc.Condition[ConditionFlag.BoundByDuty])
+            if(Svc.ClientState.LocalPlayer != null && !Svc.Condition[ConditionFlag.BoundByDuty] && Strings.Territories.Contains(Svc.ClientState.TerritoryType))
             {
                 foreach(var i in Svc.Objects)
                 {
@@ -67,7 +78,7 @@ namespace Instancinator
                                 if (!Svc.Condition[ConditionFlag.OccupiedInQuestEvent]
                                     && Environment.TickCount64 > nextKeypress)
                                 {
-                                    if (Svc.Targets.Target == null)
+                                    if (Svc.Targets.Target == null || Svc.Targets.Target.Name.ToString() != Strings.AetheryteTarget)
                                     {
                                         PluginLog.Debug("Setting aetheryte target");
                                         Svc.Targets.SetTarget(i);
@@ -80,7 +91,7 @@ namespace Instancinator
                                         {
                                             Keypress.SendKeycode(hwnd, Keypress.Num0);
                                         }
-                                        nextKeypress = Environment.TickCount64 + 1000;
+                                        nextKeypress = Environment.TickCount64 + 2000;
                                     }
                                 }
                             }
