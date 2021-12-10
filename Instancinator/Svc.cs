@@ -39,7 +39,7 @@ namespace Instancinator
 		//[PluginService] static internal JobGauges Gauges { get; private set; }
 		[PluginService] static internal KeyState KeyState { get; private set; }
 		//[PluginService] static internal LibcFunction LibcFunction { get; private set; }
-		//[PluginService] static internal ObjectTable Objects { get; private set; }
+		[PluginService] static internal ObjectTable Objects { get; private set; }
 		//[PluginService] static internal PartyFinderGui PfGui { get; private set; }
 		//[PluginService] static internal PartyList Party { get; private set; }
 #pragma warning disable CS0618 // Type or member is obsolete
