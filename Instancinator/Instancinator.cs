@@ -46,64 +46,70 @@ namespace Instancinator
         {
             if(selectedInst != 0 && message.ToString().StartsWith("Your destination is currently congested"))
             {
-                nextKeypress = 0;
+                nextKeypress = Environment.TickCount64 + 200;
             }
         }
 
         private void TerrCh(object sender, ushort e)
         {
-            if(selectedInst != 0) DisableAllEntries(GetYesAlreadyPlugin());
+            Safe(delegate
+            {
+                if (selectedInst != 0) DisableAllEntries(GetYesAlreadyPlugin());
+            });
         }
 
         private void Tick(Framework framework)
         {
             draw = false;
-            if(Svc.ClientState.LocalPlayer != null && !Svc.Condition[ConditionFlag.BoundByDuty] && Strings.Territories.Contains(Svc.ClientState.TerritoryType))
+            Safe(delegate
             {
-                foreach(var i in Svc.Objects)
+                if (Svc.ClientState.LocalPlayer != null && !Svc.Condition[ConditionFlag.BoundByDuty] && Strings.Territories.Contains(Svc.ClientState.TerritoryType))
                 {
-                    if(i.ObjectId == 0xE0000000 && i.Name.ToString() == Strings.AetheryteTarget
-                        && Vector3.Distance(Svc.ClientState.LocalPlayer.Position, i.Position) < 10f)
+                    foreach (var i in Svc.Objects)
                     {
-                        draw = true;
-                        if(selectedInst != 0)
+                        if (i.ObjectId == 0xE0000000 && i.Name.ToString() == Strings.AetheryteTarget
+                            && Vector3.Distance(Svc.ClientState.LocalPlayer.Position, i.Position) < 10f)
                         {
-                            if (Svc.Condition[ConditionFlag.BetweenAreas]
-                                || Svc.Condition[ConditionFlag.BetweenAreas51])
+                            draw = true;
+                            if (selectedInst != 0)
                             {
-                                DisableAllEntries(GetYesAlreadyPlugin());
-                            }
-                            else
-                            {
-                                if (!Svc.Condition[ConditionFlag.OccupiedInQuestEvent]
-                                    && Environment.TickCount64 > nextKeypress)
+                                if (Svc.Condition[ConditionFlag.BetweenAreas]
+                                    || Svc.Condition[ConditionFlag.BetweenAreas51])
                                 {
-                                    if (Svc.Targets.Target == null || Svc.Targets.Target.Name.ToString() != Strings.AetheryteTarget)
+                                    DisableAllEntries(GetYesAlreadyPlugin());
+                                }
+                                else
+                                {
+                                    if (!Svc.Condition[ConditionFlag.OccupiedInQuestEvent]
+                                        && Environment.TickCount64 > nextKeypress)
                                     {
-                                        PluginLog.Debug("Setting aetheryte target");
-                                        Svc.Targets.SetTarget(i);
-                                        nextKeypress = Environment.TickCount64 + 100;
-                                    }
-                                    else
-                                    {
-                                        PluginLog.Debug("Clicking");
-                                        if (TryFindGameWindow(out var hwnd))
+                                        if (Svc.Targets.Target == null || Svc.Targets.Target.Name.ToString() != Strings.AetheryteTarget)
                                         {
-                                            Keypress.SendKeycode(hwnd, Keypress.Num0);
+                                            PluginLog.Debug("Setting aetheryte target");
+                                            Svc.Targets.SetTarget(i);
+                                            nextKeypress = Environment.TickCount64 + 100;
                                         }
-                                        nextKeypress = Environment.TickCount64 + 2000;
+                                        else
+                                        {
+                                            PluginLog.Debug("Clicking");
+                                            if (TryFindGameWindow(out var hwnd))
+                                            {
+                                                Keypress.SendKeycode(hwnd, Keypress.Num0);
+                                            }
+                                            nextKeypress = Environment.TickCount64 + 2000;
+                                        }
                                     }
                                 }
                             }
+                            break;
                         }
-                        break;
                     }
                 }
-            }
-            if(selectedInst != 0 && !draw)
-            {
-                DisableAllAndCreateIfNotExists(GetYesAlreadyPlugin());
-            }
+                if (selectedInst != 0 && !draw)
+                {
+                    DisableAllAndCreateIfNotExists(GetYesAlreadyPlugin());
+                }
+            });
         }
 
         private void Draw()
@@ -117,19 +123,19 @@ namespace Instancinator
                     ImGui.SetWindowFontScale(2f);
                     if (ImGuiColoredButton(FontAwesomeIcon.DiceOne, selectedInst == 1))
                     {
-                        new TickScheduler(delegate { EnableInstance(1, GetYesAlreadyPlugin()); }, Svc.Framework);
+                        new TickScheduler(delegate { Safe(delegate { EnableInstance(1, GetYesAlreadyPlugin()); }); }, Svc.Framework);
                     }
                     if (ImGuiColoredButton(FontAwesomeIcon.DiceTwo, selectedInst == 2))
                     {
-                        new TickScheduler(delegate { EnableInstance(2, GetYesAlreadyPlugin()); }, Svc.Framework);
+                        new TickScheduler(delegate { Safe(delegate { EnableInstance(2, GetYesAlreadyPlugin()); }); }, Svc.Framework);
                     }
                     if (ImGuiColoredButton(FontAwesomeIcon.DiceThree, selectedInst == 3))
                     {
-                        new TickScheduler(delegate { EnableInstance(3, GetYesAlreadyPlugin()); }, Svc.Framework);
+                        new TickScheduler(delegate { Safe(delegate { EnableInstance(3, GetYesAlreadyPlugin()); }); }, Svc.Framework);
                     }
                     if (ImGuiIconButton(FontAwesomeIcon.TimesCircle))
                     {
-                        new TickScheduler(delegate { DisableAllAndCreateIfNotExists(GetYesAlreadyPlugin()); }, Svc.Framework);
+                        new TickScheduler(delegate { Safe(delegate { DisableAllAndCreateIfNotExists(GetYesAlreadyPlugin()); }); }, Svc.Framework);
                     }
                 }
                 ImGui.End();
@@ -151,32 +157,35 @@ namespace Instancinator
 
         private void Cmd(string command, string arguments)
         {
-            if(arguments == "check")
+            Safe(delegate
             {
-                Safe(delegate
+                if (arguments == "check")
                 {
-                    //PluginLog.Information(p.GetType().Assembly.GetTypes().Select(o => o.ToString()).Join());
-                    var yaconfig = GetYesAlreadyConfig(GetYesAlreadyPlugin());
-                    var enabled = (bool)yaconfig.GetType().GetProperty("Enabled").GetValue(yaconfig);
-                    Svc.Chat.Print($"Enabled: {enabled}");
-                });
-            }
-            else if (arguments == "disableall")
-            {
-                DisableAllAndCreateIfNotExists(GetYesAlreadyPlugin());
-            }
-            else if (arguments == "1")
-            {
-                EnableInstance(1, GetYesAlreadyPlugin());
-            }
-            else if (arguments == "2")
-            {
-                EnableInstance(2, GetYesAlreadyPlugin());
-            }
-            else if (arguments == "3")
-            {
-                EnableInstance(3, GetYesAlreadyPlugin());
-            }
+                    Safe(delegate
+                    {
+                        //PluginLog.Information(p.GetType().Assembly.GetTypes().Select(o => o.ToString()).Join());
+                        var yaconfig = GetYesAlreadyConfig(GetYesAlreadyPlugin());
+                        var enabled = (bool)yaconfig.GetType().GetProperty("Enabled").GetValue(yaconfig);
+                        Svc.Chat.Print($"Enabled: {enabled}");
+                    });
+                }
+                else if (arguments == "disableall")
+                {
+                    DisableAllAndCreateIfNotExists(GetYesAlreadyPlugin());
+                }
+                else if (arguments == "1")
+                {
+                    EnableInstance(1, GetYesAlreadyPlugin());
+                }
+                else if (arguments == "2")
+                {
+                    EnableInstance(2, GetYesAlreadyPlugin());
+                }
+                else if (arguments == "3")
+                {
+                    EnableInstance(3, GetYesAlreadyPlugin());
+                }
+            });
         }
 
         void EnableInstance(int instance, object yaplugin)
