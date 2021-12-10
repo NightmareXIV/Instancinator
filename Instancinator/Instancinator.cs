@@ -44,7 +44,7 @@ namespace Instancinator
 
         private void ToastHandler(ref SeString message, ref bool isHandled)
         {
-            if(message.ToString().StartsWith("Your destination is currently congested"))
+            if(selectedInst != 0 && message.ToString().StartsWith("Your destination is currently congested"))
             {
                 nextKeypress = 0;
             }
@@ -52,7 +52,7 @@ namespace Instancinator
 
         private void TerrCh(object sender, ushort e)
         {
-            DisableAllEntries(GetYesAlreadyPlugin());
+            if(selectedInst != 0) DisableAllEntries(GetYesAlreadyPlugin());
         }
 
         private void Tick(Framework framework)
