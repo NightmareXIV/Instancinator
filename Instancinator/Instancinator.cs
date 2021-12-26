@@ -12,6 +12,7 @@ using ImGuiNET;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.ClientState.Objects.Enums;
 
 namespace Instancinator
 {
@@ -21,10 +22,12 @@ namespace Instancinator
         bool draw = false;
         int selectedInst = 0;
         long nextKeypress = 0;
+        Config Cfg;
 
         public Instancinator(DalamudPluginInterface pluginInterface)
         {
             pluginInterface.Create<Svc>();
+            Cfg = Svc.PluginInterface.GetPluginConfig() as Config ?? new Config();
             Svc.Framework.Update += Tick;
             Svc.PluginInterface.UiBuilder.Draw += Draw;
             Svc.ClientState.TerritoryChanged += TerrCh;
@@ -46,7 +49,7 @@ namespace Instancinator
         {
             if(selectedInst != 0 && message.ToString().StartsWith("Your destination is currently congested"))
             {
-                nextKeypress = Environment.TickCount64 + 200;
+                nextKeypress = Environment.TickCount64 + 100;
             }
         }
 
@@ -61,13 +64,14 @@ namespace Instancinator
         private void Tick(Framework framework)
         {
             draw = false;
-            Safe(delegate
+            if (Svc.ClientState.LocalPlayer != null && !Svc.Condition[ConditionFlag.BoundByDuty] && Strings.Territories.Contains(Svc.ClientState.TerritoryType))
             {
-                if (Svc.ClientState.LocalPlayer != null && !Svc.Condition[ConditionFlag.BoundByDuty] && Strings.Territories.Contains(Svc.ClientState.TerritoryType))
-                {
+                Safe(delegate 
+                { 
                     foreach (var i in Svc.Objects)
                     {
-                        if (i.ObjectId == 0xE0000000 && i.Name.ToString() == Strings.AetheryteTarget
+                        if (i.ObjectKind == ObjectKind.Aetheryte
+                            && i.Name.ToString() == Strings.AetheryteTarget
                             && Vector3.Distance(Svc.ClientState.LocalPlayer.Position, i.Position) < 10f)
                         {
                             draw = true;
@@ -94,22 +98,26 @@ namespace Instancinator
                                             PluginLog.Debug("Clicking");
                                             if (TryFindGameWindow(out var hwnd))
                                             {
-                                                Keypress.SendKeycode(hwnd, Keypress.Num0);
+                                                Keypress.SendKeycode(hwnd, Cfg.KeyCode);
                                             }
-                                            nextKeypress = Environment.TickCount64 + 2000;
+                                            nextKeypress = Environment.TickCount64 + 500;
                                         }
+                                    }
+                                    else if (Svc.Condition[ConditionFlag.OccupiedInQuestEvent])
+                                    {
+                                        nextKeypress = Environment.TickCount64 + 1000;
                                     }
                                 }
                             }
                             break;
                         }
                     }
-                }
-                if (selectedInst != 0 && !draw)
-                {
-                    DisableAllAndCreateIfNotExists(GetYesAlreadyPlugin());
-                }
-            });
+                });
+            }
+            if (selectedInst != 0 && !draw)
+            {
+                Safe(delegate { DisableAllAndCreateIfNotExists(GetYesAlreadyPlugin()); });
+            }
         }
 
         private void Draw()
@@ -159,7 +167,24 @@ namespace Instancinator
         {
             Safe(delegate
             {
-                if (arguments == "check")
+                if(arguments == "key")
+                {
+                    Svc.Chat.Print($"Current confirm key code: {Cfg.KeyCode}");
+                }
+                else if (arguments.StartsWith("key"))
+                {
+                    if(int.TryParse(arguments.Replace("key ", ""), out var newKey) && newKey > 0)
+                    {
+                        Cfg.KeyCode = newKey;
+                        Svc.PluginInterface.SavePluginConfig(Cfg);
+                        Svc.Chat.Print($"New confirm key code: {Cfg.KeyCode}");
+                    }
+                    else
+                    {
+                        Svc.Chat.PrintError("Invalid argument");
+                    }
+                }
+                else if (arguments == "check")
                 {
                     Safe(delegate
                     {
@@ -184,6 +209,10 @@ namespace Instancinator
                 else if (arguments == "3")
                 {
                     EnableInstance(3, GetYesAlreadyPlugin());
+                }
+                else
+                {
+                    Svc.Chat.Print("/inst key <keycode> - change confirm key code");
                 }
             });
         }
