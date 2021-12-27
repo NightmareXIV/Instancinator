@@ -13,6 +13,7 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Interface.Internal.Notifications;
 
 namespace Instancinator
 {
@@ -23,6 +24,7 @@ namespace Instancinator
         int selectedInst = 0;
         long nextKeypress = 0;
         Config Cfg;
+        bool open = false;
 
         public Instancinator(DalamudPluginInterface pluginInterface)
         {
@@ -32,6 +34,7 @@ namespace Instancinator
             Svc.PluginInterface.UiBuilder.Draw += Draw;
             Svc.ClientState.TerritoryChanged += TerrCh;
             Svc.Commands.AddHandler("/inst", new CommandInfo(Cmd));
+            Svc.PluginInterface.UiBuilder.OpenConfigUi += delegate { open = true; };
             Svc.Toasts.ErrorToast += ToastHandler;
         }
 
@@ -47,9 +50,9 @@ namespace Instancinator
 
         private void ToastHandler(ref SeString message, ref bool isHandled)
         {
-            if(selectedInst != 0 && message.ToString().StartsWith("Your destination is currently congested"))
+            if(selectedInst != 0 && message.ToString().Contains(Strings.Signature))
             {
-                nextKeypress = Environment.TickCount64 + 100;
+                nextKeypress = Environment.TickCount64 + 100 + Cfg.ExtraDelay;
             }
         }
 
@@ -105,7 +108,7 @@ namespace Instancinator
                                     }
                                     else if (Svc.Condition[ConditionFlag.OccupiedInQuestEvent])
                                     {
-                                        nextKeypress = Environment.TickCount64 + 1000;
+                                        nextKeypress = Environment.TickCount64 + 1000 + Cfg.ExtraDelay;
                                     }
                                 }
                             }
@@ -122,6 +125,24 @@ namespace Instancinator
 
         private void Draw()
         {
+            if (open)
+            {
+                if(ImGui.Begin("Instancinator configuration", ref open, ImGuiWindowFlags.AlwaysAutoResize))
+                {
+                    ImGui.SetNextItemWidth(100f);
+                    ImGui.DragInt("Interact keycode", ref Cfg.KeyCode, float.Epsilon, 0, 1000);
+                    if(Cfg.KeyCode <= 0) Cfg.KeyCode = 0x60;
+                    ImGui.SetNextItemWidth(100f);
+                    ImGui.DragInt("Extra delay, MS", ref Cfg.ExtraDelay, 1f, 0, 2000);
+                    if (Cfg.ExtraDelay < 0) Cfg.ExtraDelay = 0;
+                }
+                ImGui.End();
+                if (!open)
+                {
+                    Svc.PluginInterface.SavePluginConfig(Cfg);
+                    Svc.PluginInterface.UiBuilder.AddNotification("Configuration saved", "Instancinator", NotificationType.Success);
+                }
+            }
             if (draw)
             {
                 if(ImGui.Begin("Instancinator", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar))
@@ -212,7 +233,7 @@ namespace Instancinator
                 }
                 else
                 {
-                    Svc.Chat.Print("/inst key <keycode> - change confirm key code");
+                    open = true;
                 }
             });
         }

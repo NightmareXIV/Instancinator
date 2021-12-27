@@ -21,6 +21,7 @@ namespace Instancinator
             public const string TravelToInstancedArea = "Travel to Instanced Area.";
             public const string AetheryteTarget = "aetheryte";
             public static ushort[] Territories = { 957, 958, 959, 960, 961, 956 };
+            public const string Signature = "Your destination is currently congested";
         }
 
         public static string Safe(Action a)

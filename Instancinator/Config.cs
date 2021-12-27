@@ -13,5 +13,6 @@ namespace Instancinator
         public int Version { get; set; } = 1;
 
         public int KeyCode = 0x60;
+        public int ExtraDelay = 0;
     }
 }
