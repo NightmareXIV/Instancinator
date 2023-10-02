@@ -14,6 +14,10 @@ using Dalamud.Interface;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Interface.Internal.Notifications;
+using ECommons;
+using ECommons.DalamudServices;
+using ECommons.DalamudServices.Legacy;
+using ECommons.Schedulers;
 
 namespace Instancinator
 {
@@ -28,7 +32,7 @@ namespace Instancinator
 
         public Instancinator(DalamudPluginInterface pluginInterface)
         {
-            pluginInterface.Create<Svc>();
+            ECommonsMain.Init(pluginInterface, this);
             Cfg = Svc.PluginInterface.GetPluginConfig() as Config ?? new Config();
             Svc.Framework.Update += Tick;
             Svc.PluginInterface.UiBuilder.Draw += Draw;
@@ -56,7 +60,7 @@ namespace Instancinator
             }
         }
 
-        private void TerrCh(object sender, ushort e)
+        private void TerrCh(ushort e)
         {
             Safe(delegate
             {
@@ -64,7 +68,7 @@ namespace Instancinator
             });
         }
 
-        private void Tick(Framework framework)
+        private void Tick(object framework)
         {
             draw = false;
             if (Svc.ClientState.LocalPlayer != null && !Svc.Condition[ConditionFlag.BoundByDuty] && Strings.Territories.Contains(Svc.ClientState.TerritoryType))
@@ -152,19 +156,19 @@ namespace Instancinator
                     ImGui.SetWindowFontScale(2f);
                     if (ImGuiColoredButton(FontAwesomeIcon.DiceOne, selectedInst == 1))
                     {
-                        new TickScheduler(delegate { Safe(delegate { EnableInstance(1, GetYesAlreadyPlugin()); }); }, Svc.Framework);
+                        new TickScheduler(delegate { Safe(delegate { EnableInstance(1, GetYesAlreadyPlugin()); }); });
                     }
                     if (ImGuiColoredButton(FontAwesomeIcon.DiceTwo, selectedInst == 2))
                     {
-                        new TickScheduler(delegate { Safe(delegate { EnableInstance(2, GetYesAlreadyPlugin()); }); }, Svc.Framework);
+                        new TickScheduler(delegate { Safe(delegate { EnableInstance(2, GetYesAlreadyPlugin()); }); });
                     }
                     if (ImGuiColoredButton(FontAwesomeIcon.DiceThree, selectedInst == 3))
                     {
-                        new TickScheduler(delegate { Safe(delegate { EnableInstance(3, GetYesAlreadyPlugin()); }); }, Svc.Framework);
+                        new TickScheduler(delegate { Safe(delegate { EnableInstance(3, GetYesAlreadyPlugin()); }); });
                     }
                     if (ImGuiIconButton(FontAwesomeIcon.TimesCircle))
                     {
-                        new TickScheduler(delegate { Safe(delegate { DisableAllAndCreateIfNotExists(GetYesAlreadyPlugin()); }); }, Svc.Framework);
+                        new TickScheduler(delegate { Safe(delegate { DisableAllAndCreateIfNotExists(GetYesAlreadyPlugin()); }); });
                     }
                 }
                 ImGui.End();

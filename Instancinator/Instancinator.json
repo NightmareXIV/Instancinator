@@ -1,8 +1,7 @@
 ﻿{
-  "Name": "Instancinator",
-  "Author": "NightmareXIV",
-  "Description": "-",
-  "RepoUrl": "https://github.com/NightmareXIV/Instancinator",
-  "AssemblyVersion": "9.0.0.0",
-  "DalamudApiLevel": 8
+    "Name": "Instancinator",
+    "Author": "NightmareXIV",
+    "Description": "[legacy plugin] One-click solution to change instances. Requires Yes Already.",
+    "Punchline": "[legacy plugin] One-click solution to change instances. Requires Yes Already.",
+    "RepoUrl": "https://github.com/NightmareXIV/Instancinator"
 }
